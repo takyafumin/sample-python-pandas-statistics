@@ -137,24 +137,54 @@ def count_by_country(file_path):
         
     Returns:
         None
+    
+    Raises:
+        FileNotFoundError: ファイルが存在しない場合
+        KeyError: CSVファイルに「国」カラムが存在しない場合
+        pd.errors.EmptyDataError: CSVファイルが空の場合
+        pd.errors.ParserError: CSVファイルの形式が不正な場合
     """
-    # CSVファイルを読み込む
-    df = pd.read_csv(file_path)
-    
-    # 国別にカウント
-    country_counts = aggregate_by_country(df)
-    
-    # 国名を所定の順序に並び替え
-    ordered_countries = get_ordered_countries(country_counts)
-    
-    # 指定した順序で国別カウントを並べ替え
-    ordered_counts = create_ordered_counts(country_counts, ordered_countries)
-    
-    # 結果を表示
-    display_results(ordered_counts, country_counts)
+    try:
+        # CSVファイルを読み込む
+        df = pd.read_csv(file_path)
+        
+        # 「国」カラムの存在確認
+        if '国' not in df.columns:
+            raise KeyError("CSVファイルに「国」カラムが存在しません")
+        
+        # 国別にカウント
+        country_counts = aggregate_by_country(df)
+        
+        # 国名を所定の順序に並び替え
+        ordered_countries = get_ordered_countries(country_counts)
+        
+        # 指定した順序で国別カウントを並べ替え
+        ordered_counts = create_ordered_counts(country_counts, ordered_countries)
+        
+        # 結果を表示
+        display_results(ordered_counts, country_counts)
+        
+    except FileNotFoundError:
+        print(f"エラー: ファイル '{file_path}' が見つかりません")
+    except KeyError as e:
+        print(f"エラー: {str(e)}")
+    except pd.errors.EmptyDataError:
+        print(f"エラー: ファイル '{file_path}' は空です")
+    except pd.errors.ParserError:
+        print(f"エラー: ファイル '{file_path}' はCSV形式として解析できません")
+    except Exception as e:
+        print(f"予期せぬエラーが発生しました: {str(e)}")
 
 
 if __name__ == "__main__":
-    # プロジェクトのルートディレクトリからの相対パス
-    file_path = os.path.join("resources", "csv", "sample_data.csv")
-    count_by_country(file_path)
+    try:
+        # プロジェクトのルートディレクトリからの相対パス
+        file_path = os.path.join("resources", "csv", "sample_data.csv")
+        
+        # ファイルの存在確認
+        if not os.path.exists(file_path):
+            print(f"エラー: ファイル '{file_path}' が見つかりません")
+        else:
+            count_by_country(file_path)
+    except Exception as e:
+        print(f"プログラムの実行中にエラーが発生しました: {str(e)}")
