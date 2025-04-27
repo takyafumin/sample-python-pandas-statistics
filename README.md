@@ -15,6 +15,7 @@ resources/
         sample_data.csv  # サンプルデータファイル
 src/
     generate_sample_data.py  # サンプルデータ生成スクリプト
+    count_by_country.py      # 国別データ集計スクリプト
 ```
 
 ## セットアップ方法
