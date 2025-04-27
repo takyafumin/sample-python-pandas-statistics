@@ -1,0 +1,77 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import pandas as pd
+import os
+import unicodedata
+
+def get_east_asian_width_count(text):
+    """
+    文字列の表示幅をカウントする（全角文字は2、半角文字は1としてカウント）
+    
+    Args:
+        text: カウント対象の文字列
+        
+    Returns:
+        int: 表示幅の合計
+    """
+    count = 0
+    for c in text:
+        # East Asian Ambiguous は全角として扱う
+        if unicodedata.east_asian_width(c) in ['F', 'W', 'A']:
+            count += 2
+        else:
+            count += 1
+    return count
+
+def count_by_country(file_path):
+    """
+    CSVファイルを読み込み、国別の件数を集計する
+    
+    Args:
+        file_path: CSVファイルのパス
+        
+    Returns:
+        None
+    """
+    # CSVファイルを読み込む
+    df = pd.read_csv(file_path)
+    
+    # 国別にカウント
+    country_counts = df['国'].value_counts()
+    
+    # 国名のリストを取得（日本を除く）
+    other_countries = sorted([country for country in country_counts.index if country != '日本'])
+    
+    # 並び順を指定（日本を先頭に、あとは五十音順）
+    ordered_countries = ['日本'] + other_countries if '日本' in country_counts.index else other_countries
+    
+    # 指定した順序で国別カウントを並べ替え
+    ordered_counts = pd.Series([country_counts.get(country, 0) for country in ordered_countries], 
+                               index=ordered_countries)
+    
+    # 結果を表示
+    print('【国別集計結果】')
+    
+    # 最長の国名の表示幅を取得
+    max_display_width = max([get_east_asian_width_count(country) for country in ordered_counts.index])
+    max_display_width = max(max_display_width, get_east_asian_width_count("合計"))
+    
+    # フォーマットを統一して出力
+    for country, count in ordered_counts.items():
+        padding = max_display_width - get_east_asian_width_count(country)
+        padding_spaces = " " * padding
+        # 数値をカンマ区切りで表示
+        print(f'{country}{padding_spaces}：{count:>3,}件')
+    
+    # 合計件数を表示（右寄せで統一）
+    padding = max_display_width - get_east_asian_width_count("合計")
+    padding_spaces = " " * padding
+    # 数値をカンマ区切りで表示
+    print(f'合計{padding_spaces}：{country_counts.sum():>3,}件')
+
+
+if __name__ == "__main__":
+    # プロジェクトのルートディレクトリからの相対パス
+    file_path = os.path.join("resources", "csv", "sample_data.csv")
+    count_by_country(file_path)
