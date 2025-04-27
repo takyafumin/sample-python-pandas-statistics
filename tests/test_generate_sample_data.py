@@ -20,7 +20,7 @@ class TestGenerateSampleData:
             # ファイルが存在するか確認
             assert os.path.exists(temp_file_path), f"ファイル {temp_file_path} が作成されていません"
             
-            # 正確に10行（ヘッダー + 9行のデータ）あるか確認
+            # 正確に11行（ヘッダー + 10行のデータ）あるか確認
             with open(temp_file_path, 'r', encoding='utf-8') as f:
                 reader = csv.reader(f)
                 rows = list(reader)
