@@ -13,9 +13,11 @@ requirements.txt      # 必要なライブラリの一覧
 resources/
     csv/
         sample_data.csv  # サンプルデータファイル
+    master/
+        country_region_map.csv  # 国と地域のマッピングデータ
 src/
     generate_sample_data.py  # サンプルデータ生成スクリプト
-    count_by_country.py      # 国別データ集計スクリプト
+    count_by_country.py      # 国別・地域別データ集計スクリプト
 ```
 
 ## セットアップ方法
@@ -25,6 +27,7 @@ src/
 このプロジェクトでは以下のライブラリを使用します：
 - pandas
 - numpy
+- unicodedata
 - matplotlib (データ可視化用)
 
 ### 環境構築
@@ -62,15 +65,18 @@ python src/generate_sample_data.py
 
 生成されたデータは `sample_data.csv` として保存されます。
 
-### 国別データの集計
+### 国別・地域別データの集計
 
-以下のコマンドを実行して、CSVファイルから国別のデータ件数を集計します：
+以下のコマンドを実行して、CSVファイルから国別・地域別のデータ件数を集計します：
 
 ```bash
 python src/count_by_country.py
 ```
 
-このスクリプトは `sample_data.csv` ファイルを読み込み、国ごとのデータ件数を集計して表示します。
+このスクリプトは `sample_data.csv` ファイルを読み込み、次の処理を行います：
+- 国ごとのデータ件数を集計（日本を先頭に、他の国は五十音順で表示）
+- `country_region_map.csv` のマッピングデータを使用して地域ごとのデータ件数を集計
+- 国別・地域別の集計結果を整形して表示（全角・半角文字の表示幅を考慮）
 
 ### テストの実行
 
