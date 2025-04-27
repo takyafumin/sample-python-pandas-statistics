@@ -1,3 +1,7 @@
 pandas
 numpy
 matplotlib
+
+# テスト用ライブラリ
+pytest
+pytest-cov
