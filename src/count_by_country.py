@@ -5,6 +5,34 @@ import pandas as pd
 import os
 import unicodedata
 
+def get_country_region_map():
+    """
+    国と地域のマッピングを取得する
+    
+    Returns:
+        dict: {国名: 地域名} の形式の辞書
+    """
+    try:
+        # プロジェクトのルートディレクトリからの相対パス
+        map_file_path = os.path.join("resources", "master", "country_region_map.csv")
+        
+        # ファイルの存在確認
+        if not os.path.exists(map_file_path):
+            print(f"警告: マッピングファイル '{map_file_path}' が見つかりません")
+            return {}
+            
+        # CSVファイルを読み込む
+        map_df = pd.read_csv(map_file_path)
+        
+        # 国名と地域名のマッピングを作成
+        country_region_dict = dict(zip(map_df['国名'], map_df['地域名']))
+        
+        return country_region_dict
+        
+    except Exception as e:
+        print(f"国と地域のマッピング取得中にエラーが発生しました: {str(e)}")
+        return {}
+
 def get_east_asian_width_count(text):
     """
     文字列の表示幅をカウントする（全角文字は2、半角文字は1としてカウント）
@@ -128,22 +156,41 @@ def display_results(ordered_counts, country_counts):
     # 合計件数を表示
     format_and_print_item("合計", country_counts.sum(), max_display_width, max_count_len)
 
-def aggregate_by_region(df):
+def aggregate_by_region(df, country_region_map=None):
     """
     地域別に集計する
     
     Args:
         df: 集計対象のDataFrame
+        country_region_map: 国と地域のマッピング辞書 {国名: 地域名}
         
     Returns:
         pd.Series: 地域別の集計結果
     """
-    # 地域カラムがある場合は地域別に集計する
+    # 地域カラムがある場合は直接地域別に集計する
     if '地域' in df.columns:
         return df['地域'].value_counts()
-    else:
-        print("警告: データに「地域」カラムが見つかりません。地域別集計はスキップします。")
-        return pd.Series(dtype='int64')  # 空のシリーズを返す
+    
+    # マッピング辞書が提供されておらず、地域カラムもない場合
+    if country_region_map is None:
+        # マッピング定義を取得
+        country_region_map = get_country_region_map()
+        if not country_region_map:  # マッピングが空の場合
+            print("警告: 国と地域のマッピングが取得できませんでした。地域別集計はスキップします。")
+            return pd.Series(dtype='int64')  # 空のシリーズを返す
+    
+    # 国名を地域名に変換
+    regions = []
+    for country in df['国']:
+        region = country_region_map.get(country, 'その他')
+        regions.append(region)
+    
+    # 地域カラムを追加
+    temp_df = df.copy()
+    temp_df['地域'] = regions
+    
+    # 地域別に集計
+    return temp_df['地域'].value_counts()
 
 def get_ordered_regions(region_counts):
     """
