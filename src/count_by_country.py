@@ -5,6 +5,34 @@ import pandas as pd
 import os
 import unicodedata
 
+def get_country_region_map():
+    """
+    国と地域のマッピングを取得する
+    
+    Returns:
+        dict: {国名: 地域名} の形式の辞書
+    """
+    try:
+        # プロジェクトのルートディレクトリからの相対パス
+        map_file_path = os.path.join("resources", "master", "country_region_map.csv")
+        
+        # ファイルの存在確認
+        if not os.path.exists(map_file_path):
+            print(f"警告: マッピングファイル '{map_file_path}' が見つかりません")
+            return {}
+            
+        # CSVファイルを読み込む
+        map_df = pd.read_csv(map_file_path)
+        
+        # 国名と地域名のマッピングを作成
+        country_region_dict = dict(zip(map_df['国名'], map_df['地域名']))
+        
+        return country_region_dict
+        
+    except Exception as e:
+        print(f"国と地域のマッピング取得中にエラーが発生しました: {str(e)}")
+        return {}
+
 def get_east_asian_width_count(text):
     """
     文字列の表示幅をカウントする（全角文字は2、半角文字は1としてカウント）
@@ -128,9 +156,118 @@ def display_results(ordered_counts, country_counts):
     # 合計件数を表示
     format_and_print_item("合計", country_counts.sum(), max_display_width, max_count_len)
 
+def aggregate_by_region(df, country_region_map=None):
+    """
+    地域別に集計する
+    
+    Args:
+        df: 集計対象のDataFrame
+        country_region_map: 国と地域のマッピング辞書 {国名: 地域名}
+        
+    Returns:
+        pd.Series: 地域別の集計結果
+    """
+    # 地域カラムがある場合は直接地域別に集計する
+    if '地域' in df.columns:
+        return df['地域'].value_counts()
+    
+    # マッピング辞書が提供されておらず、地域カラムもない場合
+    if country_region_map is None:
+        # マッピング定義を取得
+        country_region_map = get_country_region_map()
+        if not country_region_map:  # マッピングが空の場合
+            print("警告: 国と地域のマッピングが取得できませんでした。地域別集計はスキップします。")
+            return pd.Series(dtype='int64')  # 空のシリーズを返す
+    
+    # 国名を地域名に変換
+    regions = []
+    for country in df['国']:
+        region = country_region_map.get(country, 'その他')
+        regions.append(region)
+    
+    # 地域カラムを追加
+    temp_df = df.copy()
+    temp_df['地域'] = regions
+    
+    # 地域別に集計
+    return temp_df['地域'].value_counts()
+
+def get_ordered_regions(region_counts):
+    """
+    地域名を所定の順序で並び替える
+    
+    Args:
+        region_counts: 地域別集計結果
+        
+    Returns:
+        list: 並び替えた地域名リスト
+    """
+    # 地域の標準的な並び順
+    standard_order = [
+        'アジア', 'ヨーロッパ', '北アメリカ', '南アメリカ', 'アフリカ', 'オセアニア', 'その他'
+    ]
+    
+    # 存在する地域だけを標準順で取得
+    ordered_regions = [region for region in standard_order if region in region_counts.index]
+    
+    # 標準順に含まれない地域があれば追加
+    for region in region_counts.index:
+        if region not in ordered_regions:
+            ordered_regions.append(region)
+    
+    return ordered_regions
+
+def create_ordered_region_counts(region_counts, ordered_regions):
+    """
+    指定した順序で地域別カウントを並べ替える
+    
+    Args:
+        region_counts: 地域別集計結果
+        ordered_regions: 並び替えた地域名リスト
+        
+    Returns:
+        pd.Series: 並び替えた地域別集計結果
+    """
+    return pd.Series([region_counts.get(region, 0) for region in ordered_regions],
+                   index=ordered_regions)
+
+def display_region_results(ordered_region_counts, region_counts):
+    """
+    地域別集計結果を表示する
+    
+    Args:
+        ordered_region_counts: 並び替えた地域別集計結果
+        region_counts: 地域別集計結果
+        
+    Returns:
+        None
+    """
+    print('【地域別集計結果】')
+    
+    # フォーマットパラメータを計算
+    max_display_width = max([get_east_asian_width_count(region) for region in ordered_region_counts.index])
+    max_display_width = max(max_display_width, get_east_asian_width_count("合計"))
+    
+    # 数値の最大桁数を取得（カンマ表示も考慮）
+    max_count = max(max(ordered_region_counts), region_counts.sum())
+    max_count_len = len(f"{max_count:,}")
+    
+    # 地域別のカウントを表示
+    for region, count in ordered_region_counts.items():
+        padding = max_display_width - get_east_asian_width_count(region)
+        padding_spaces = " " * padding
+        formatted_count = f"{count:,}".rjust(max_count_len)
+        print(f'{region}{padding_spaces}：{formatted_count}件')
+    
+    # 合計件数を表示
+    padding = max_display_width - get_east_asian_width_count("合計")
+    padding_spaces = " " * padding
+    formatted_count = f"{region_counts.sum():,}".rjust(max_count_len)
+    print(f'合計{padding_spaces}：{formatted_count}件')
+
 def count_by_country(file_path):
     """
-    CSVファイルを読み込み、国別の件数を集計する
+    CSVファイルを読み込み、国別と地域別の件数を集計する
     
     Args:
         file_path: CSVファイルのパス
@@ -161,8 +298,24 @@ def count_by_country(file_path):
         # 指定した順序で国別カウントを並べ替え
         ordered_counts = create_ordered_counts(country_counts, ordered_countries)
         
-        # 結果を表示
+        # 結果を表示（国別）
         display_results(ordered_counts, country_counts)
+        
+        # 地域別集計を行う
+        region_counts = aggregate_by_region(df)
+        
+        # 地域別集計結果が空でない場合のみ表示
+        if not region_counts.empty:
+            print("\n") # 結果の間に空行を入れる
+            
+            # 地域名を所定の順序に並び替え
+            ordered_regions = get_ordered_regions(region_counts)
+            
+            # 指定した順序で地域別カウントを並べ替え
+            ordered_region_counts = create_ordered_region_counts(region_counts, ordered_regions)
+            
+            # 結果を表示（地域別）
+            display_region_results(ordered_region_counts, region_counts)
         
     except FileNotFoundError:
         print(f"エラー: ファイル '{file_path}' が見つかりません")
