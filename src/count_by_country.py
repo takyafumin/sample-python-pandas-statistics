@@ -57,18 +57,24 @@ def count_by_country(file_path):
     max_display_width = max([get_east_asian_width_count(country) for country in ordered_counts.index])
     max_display_width = max(max_display_width, get_east_asian_width_count("合計"))
     
+    # 数値の最大桁数を取得（カンマ表示も考慮）
+    max_count = max(max(ordered_counts), country_counts.sum())
+    max_count_len = len(f"{max_count:,}")
+    
     # フォーマットを統一して出力
     for country, count in ordered_counts.items():
         padding = max_display_width - get_east_asian_width_count(country)
         padding_spaces = " " * padding
-        # 数値をカンマ区切りで表示
-        print(f'{country}{padding_spaces}：{count:>3,}件')
+        # 数値をカンマ区切りで表示し、桁数に応じて右寄せ
+        formatted_count = f"{count:,}".rjust(max_count_len)
+        print(f'{country}{padding_spaces}：{formatted_count}件')
     
     # 合計件数を表示（右寄せで統一）
     padding = max_display_width - get_east_asian_width_count("合計")
     padding_spaces = " " * padding
-    # 数値をカンマ区切りで表示
-    print(f'合計{padding_spaces}：{country_counts.sum():>3,}件')
+    # 合計も同様に右寄せ
+    formatted_total = f"{country_counts.sum():,}".rjust(max_count_len)
+    print(f'合計{padding_spaces}：{formatted_total}件')
 
 
 if __name__ == "__main__":
