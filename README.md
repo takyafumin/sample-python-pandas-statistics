@@ -15,6 +15,7 @@ resources/
         sample_data.csv  # サンプルデータファイル
 src/
     generate_sample_data.py  # サンプルデータ生成スクリプト
+    count_by_country.py      # 国別データ集計スクリプト
 ```
 
 ## セットアップ方法
@@ -60,6 +61,33 @@ python src/generate_sample_data.py
 - スコア: 0〜100の範囲のランダムな数値（小数点2桁）
 
 生成されたデータは `sample_data.csv` として保存されます。
+
+### 国別データの集計
+
+以下のコマンドを実行して、CSVファイルから国別のデータ件数を集計します：
+
+```bash
+python src/count_by_country.py
+```
+
+このスクリプトは `sample_data.csv` ファイルを読み込み、国ごとのデータ件数を集計して表示します。
+
+### テストの実行
+
+以下のコマンドでテストを実行できます：
+
+```bash
+# すべてのテストを実行
+pytest
+
+# 詳細な出力でテストを実行
+pytest -v
+
+# テストカバレッジレポートを生成
+pytest --cov=src tests/
+```
+
+テストはプロジェクトの機能が正しく動作することを確認するために作成されています。テストファイルは `tests/` ディレクトリに配置されています。
 
 ## 今後の開発予定
 
