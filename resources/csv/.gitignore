@@ -1,0 +1,4 @@
+# resources/csvディレクトリ内のすべてのファイルをGit管理対象外にする
+*
+# .gitignoreファイル自体は管理対象に含める
+!.gitignore
