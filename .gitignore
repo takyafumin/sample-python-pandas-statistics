@@ -1,0 +1,13 @@
+# 仮想環境を無視
+venv/
+
+# Pythonによくあるキャッシュファイル
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# その他エディタなどの設定ファイルも無視（任意）
+.idea/
+.vscode/
+.DS_Store
